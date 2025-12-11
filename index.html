@@ -3,89 +3,370 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>第三展區：雙面鏡</title>
+    <title>第三展區：雙面鏡 (High-Fidelity)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
     <style>
         :root { 
-            --bg: #050505; 
-            --green: #00ff41; 
-            --red: #ff3333;
-            --warm: #fffcf5; 
+            --bg: #0a0a0a; 
+            --neon-green: #00ff41; 
+            --neon-red: #ff3333;
+            --warm-light: #f5e6d3; 
+            --warm-text: #4a3b32;
+            --glass: rgba(255, 255, 255, 0.05);
         }
-        body { background: var(--bg); color: #ddd; font-family: 'Microsoft JhengHei', monospace; height: 100vh; display: flex; flex-direction: column; align-items: center; margin: 0; user-select: none; overflow: hidden; }
+
+        body { 
+            background: var(--bg); 
+            color: #ddd; 
+            font-family: 'Noto Serif TC', serif; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            margin: 0; 
+            overflow: hidden; 
+            user-select: none;
+        }
+
+        /* 背景動態網格 */
+        body::before {
+            content: "";
+            position: absolute;
+            width: 200%; height: 200%;
+            background: 
+                linear-gradient(rgba(0, 255, 65, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 255, 65, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            animation: gridMove 60s linear infinite;
+            z-index: -1;
+            pointer-events: none;
+        }
+        @keyframes gridMove { 0% { transform: translate(0,0); } 100% { transform: translate(-40px, -40px); } }
+
+        /* 導覽列 */
+        .nav { 
+            margin-top: 50px; 
+            display: flex; 
+            gap: 20px; 
+            z-index: 20; 
+            background: rgba(0,0,0,0.6);
+            padding: 10px 20px;
+            border-radius: 50px;
+            border: 1px solid #333;
+            backdrop-filter: blur(10px);
+        }
         
-        /* 移除原本的 .home-btn 樣式 */
-
-        .nav { margin-top: 60px; display: flex; gap: 15px; z-index: 10; }
-        .nav button { background: none; border: 1px solid #444; color: #888; padding: 10px 20px; cursor: pointer; transition: 0.3s; font-size: 1rem; }
-        .nav button:hover, .nav button.active { border-color: var(--green); color: var(--green); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
-
-        .mirror-container { width: 90%; max-width: 800px; height: 450px; border: 2px solid #333; margin-top: 30px; position: relative; background: #000; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        .nav button { 
+            background: transparent; 
+            border: none; 
+            color: #666; 
+            padding: 8px 16px; 
+            cursor: pointer; 
+            transition: 0.4s; 
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
         
-        /* 真實層 (底層) */
-        .real-layer { position: absolute; width: 100%; height: 100%; background: var(--warm); color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; box-sizing: border-box; transition: opacity 0.5s; }
-        .real-icon { font-size: 4rem; margin-bottom: 20px; }
-        .real-quote { font-size: 1.3rem; line-height: 1.6; font-style: italic; font-weight: bold; max-width: 600px; }
-        .real-name { margin-top: 20px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+        .nav button::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 0%; height: 2px;
+            background: var(--neon-green);
+            transition: 0.3s;
+        }
 
-        /* 雜訊層 (遮罩) */
-        .noise-layer { position: absolute; top: 0; left: 0; width: 90%; height: 100%; background: #111; overflow: hidden; border-right: 4px solid var(--green); }
-        .tag { position: absolute; color: rgba(255,255,255,0.2); white-space: nowrap; font-family: monospace; }
-        .tag.highlight { color: var(--red); font-weight: bold; opacity: 0.8; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; z-index: 2; }
+        .nav button:hover, .nav button.active { 
+            color: var(--neon-green); 
+            text-shadow: 0 0 10px rgba(0,255,65,0.5);
+        }
+        
+        .nav button.active::after { width: 100%; }
 
-        /* 拖曳手把 */
-        .handle { position: absolute; left: 90%; top: 50%; transform: translate(-50%, -50%); background: #000; color: var(--green); border: 1px solid var(--green); padding: 10px 15px; border-radius: 30px; cursor: ew-resize; z-index: 20; font-weight: bold; box-shadow: 0 0 15px var(--green); }
+        /* 鏡像舞台 */
+        .mirror-container { 
+            width: 85vw; 
+            max-width: 900px; 
+            height: 500px; 
+            border: 1px solid #333; 
+            margin-top: 40px; 
+            position: relative; 
+            background: #000; 
+            overflow: hidden; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); 
+            border-radius: 4px;
+        }
+        
+        /* 真實層 (Warm) */
+        .real-layer { 
+            position: absolute; 
+            width: 100%; height: 100%; 
+            background: radial-gradient(circle at center, var(--warm-light), #dccbb5); 
+            color: var(--warm-text); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            text-align: center; 
+            padding: 60px; 
+            box-sizing: border-box; 
+            opacity: 0;
+            transition: opacity 0.8s ease-in-out;
+        }
+        
+        .real-layer.active { opacity: 1; }
+
+        .real-icon { 
+            font-size: 5rem; 
+            margin-bottom: 25px; 
+            filter: drop-shadow(0 10px 10px rgba(0,0,0,0.1));
+            animation: floatIcon 6s ease-in-out infinite;
+        }
+        @keyframes floatIcon { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+
+        .real-quote { 
+            font-size: 1.5rem; 
+            line-height: 1.8; 
+            font-weight: bold; 
+            max-width: 650px; 
+            position: relative;
+        }
+        
+        .real-quote::before, .real-quote::after {
+            content: '"';
+            font-size: 4rem;
+            opacity: 0.2;
+            position: absolute;
+            font-family: serif;
+        }
+        .real-quote::before { top: -20px; left: -30px; }
+        .real-quote::after { bottom: -40px; right: -30px; }
+
+        .real-name { 
+            margin-top: 30px; 
+            font-family: 'Share Tech Mono', monospace; 
+            color: #88705a; 
+            letter-spacing: 2px;
+            border-top: 1px solid rgba(0,0,0,0.1);
+            padding-top: 15px;
+        }
+
+        /* 雜訊層 (Noise) */
+        .noise-layer { 
+            position: absolute; 
+            top: 0; left: 0; 
+            width: 90%; 
+            height: 100%; 
+            background: #111; 
+            overflow: hidden; 
+            border-right: 2px solid var(--neon-green); 
+            box-shadow: 5px 0 30px rgba(0, 255, 65, 0.2);
+            z-index: 5;
+        }
+
+        /* 動態標籤 */
+        .tag { 
+            position: absolute; 
+            color: rgba(255,255,255,0.15); 
+            white-space: nowrap; 
+            font-family: 'Share Tech Mono', monospace; 
+            font-size: 1.2rem;
+            animation: drift 10s infinite linear alternate;
+            cursor: default;
+        }
+        
+        .tag.highlight { 
+            color: var(--neon-red); 
+            font-weight: bold; 
+            opacity: 0.9; 
+            font-size: 1.8rem; 
+            text-shadow: 2px 0 5px rgba(255, 51, 51, 0.6); 
+            z-index: 2; 
+            animation: drift 8s infinite linear alternate, pulse 3s infinite;
+        }
+
+        @keyframes drift { 
+            0% { transform: translate(0, 0) rotate(0deg); } 
+            100% { transform: translate(10px, 10px) rotate(2deg); } 
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.5; } }
+
+        /* 雷射手把 */
+        .handle { 
+            position: absolute; 
+            left: 90%; top: 0; bottom: 0;
+            width: 40px; /* 觸控區 */
+            margin-left: -20px;
+            cursor: ew-resize; 
+            z-index: 20; 
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .handle-line {
+            width: 4px; height: 100%;
+            background: var(--neon-green);
+            box-shadow: 0 0 15px var(--neon-green), 0 0 30px var(--neon-green);
+        }
+        
+        .handle-knob {
+            position: absolute;
+            width: 40px; height: 40px;
+            border: 2px solid var(--neon-green);
+            border-radius: 50%;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--neon-green);
+            box-shadow: 0 0 20px rgba(0,255,65,0.4);
+            font-size: 1.2rem;
+        }
 
         /* 留言區 */
-        .input-section { margin-top: 30px; opacity: 0; transition: 1s; text-align: center; transform: translateY(20px); pointer-events: none; z-index: 20; position: relative;}
-        .input-section.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        .input-section { 
+            margin-top: 40px; 
+            opacity: 0; 
+            transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1); 
+            text-align: center; 
+            transform: translateY(30px); 
+            pointer-events: none; 
+            z-index: 20; 
+            position: relative;
+            background: rgba(0,0,0,0.8);
+            padding: 20px 40px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
         
-        input { padding: 12px; width: 250px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; outline: none; }
-        button.send { padding: 12px 25px; background: var(--green); color: #000; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; margin-left: 10px; }
-        button.send:hover { box-shadow: 0 0 15px var(--green); }
+        .input-section.show { 
+            opacity: 1; 
+            transform: translateY(0); 
+            pointer-events: auto; 
+        }
+        
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        input { 
+            padding: 15px; 
+            width: 300px; 
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid #444; 
+            color: #fff; 
+            border-radius: 4px; 
+            outline: none; 
+            font-family: inherit;
+            font-size: 1rem;
+            transition: 0.3s;
+        }
+        input:focus { border-color: var(--neon-green); box-shadow: 0 0 10px rgba(0,255,65,0.1); }
+
+        button.send { 
+            padding: 15px 30px; 
+            background: var(--neon-green); 
+            color: #000; 
+            border: none; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            font-family: 'Share Tech Mono', monospace;
+            text-transform: uppercase;
+            transition: 0.3s;
+        }
+        button.send:hover { box-shadow: 0 0 20px var(--neon-green); transform: scale(1.05); }
 
         /* 星空特效 */
         #stars-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
-        .star { position: absolute; color: rgba(255,255,255,0.4); animation: float 15s linear forwards; pointer-events: none; font-size: 0.9rem; white-space: nowrap;}
         
-        /* 使用者發送的星星樣式 */
+        .star { 
+            position: absolute; 
+            color: rgba(255,255,255,0.3); 
+            animation: float 12s linear forwards; 
+            pointer-events: none; 
+            font-size: 0.9rem; 
+            white-space: nowrap;
+            font-family: 'Noto Serif TC', serif;
+        }
+        
         .star.user-sent {
-            color: #00ff41;
-            font-size: 1.8rem;
+            color: var(--neon-green);
+            font-size: 2rem;
             font-weight: bold;
-            text-shadow: 0 0 15px #00ff41;
+            text-shadow: 0 0 20px var(--neon-green);
             z-index: 100;
-            animation: floatUser 8s linear forwards; /* 速度稍快一點 */
+            animation: floatUser 6s ease-out forwards;
         }
 
-        @keyframes float { from { transform: translateY(110vh); opacity: 0; } 10% { opacity: 1; } to { transform: translateY(-10vh); opacity: 0; } }
-        @keyframes floatUser { from { transform: translateY(100vh); opacity: 0; } 5% { opacity: 1; } to { transform: translateY(-20vh); opacity: 0; } }
+        @keyframes float { from { transform: translateY(110vh) scale(0.8); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-10vh) scale(1); opacity: 0; } }
+        @keyframes floatUser { from { transform: translateY(100vh) scale(0.5); opacity: 0; } 20% { opacity: 1; transform: translateY(60vh) scale(1.2); } 100% { transform: translateY(-20vh) scale(1); opacity: 0; } }
+
+        /* Glitch 過場特效 */
+        .glitch-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #000;
+            z-index: 50;
+            display: none;
+            mix-blend-mode: hard-light;
+        }
+        
+        .glitch-active {
+            display: block;
+            animation: glitch-anim 0.4s steps(5) forwards;
+        }
+
+        @keyframes glitch-anim {
+            0% { clip-path: inset(20% 0 80% 0); transform: translate(-5px, 5px); }
+            20% { clip-path: inset(60% 0 10% 0); transform: translate(5px, -5px); }
+            40% { clip-path: inset(40% 0 50% 0); transform: translate(-5px, 5px); }
+            60% { clip-path: inset(80% 0 5% 0); transform: translate(5px, -5px); }
+            80% { clip-path: inset(10% 0 60% 0); transform: translate(-5px, 5px); }
+            100% { clip-path: inset(0 0 0 0); transform: translate(0, 0); }
+        }
+
     </style>
 </head>
 <body>
-    <!-- 移除了 <a href="index.html" class="home-btn">← 回大廳</a> -->
 
     <div class="nav">
-        <button onclick="loadProfile(0)" class="active">刺青壯漢</button>
-        <button onclick="loadProfile(1)">獨居長輩</button>
-        <button onclick="loadProfile(2)">跨性別者</button>
+        <button onclick="changeProfile(0)" class="active">刺青壯漢</button>
+        <button onclick="changeProfile(1)">獨居長輩</button>
+        <button onclick="changeProfile(2)">跨性別者</button>
     </div>
 
     <div class="mirror-container" id="stage">
+        <!-- Glitch 過場層 -->
+        <div class="glitch-overlay" id="glitch"></div>
+
         <div class="real-layer" id="real">
             <div class="real-icon" id="icon"></div>
             <div class="real-quote" id="quote"></div>
             <div class="real-name" id="name"></div>
         </div>
+        
         <div class="noise-layer" id="mask">
             <div id="tags-container"></div>
         </div>
-        <div class="handle" id="handle">↔</div>
+        
+        <div class="handle" id="handle">
+            <div class="handle-line"></div>
+            <div class="handle-knob">↔</div>
+        </div>
     </div>
 
     <div class="input-section" id="input-sec">
-        <p style="color: #aaa; margin-bottom: 15px;">看見真實後，你想用什麼詞重新定義他/她？</p>
-        <input type="text" id="msg" placeholder="例如：勇敢、做自己..." autocomplete="off">
-        <button class="send" onclick="send()">送出祝福</button>
+        <p style="color: #aaa; margin-bottom: 5px; font-family: 'Share Tech Mono';">SYSTEM MESSAGE</p>
+        <h3 style="margin: 0 0 15px 0;">看見真實後，你想用什麼詞重新定義他/她？</h3>
+        <div class="input-wrapper">
+            <input type="text" id="msg" placeholder="例如：勇敢、溫柔、做自己..." autocomplete="off">
+            <button class="send" onclick="send()">送出祝福</button>
+        </div>
     </div>
 
     <div id="stars-bg"></div>
@@ -116,38 +397,55 @@
         let isInputShown = false;
 
         window.onload = () => {
-            loadProfile(0);
+            loadProfile(0, false); // 初始載入不播 Glitch
             startFloatingStars();
         };
 
-        function loadProfile(index) {
+        // 新增：帶有過場動畫的切換
+        function changeProfile(index) {
+            // 播放 Glitch 特效
+            const glitch = document.getElementById('glitch');
+            const realLayer = document.getElementById('real');
+            
+            glitch.classList.add('glitch-active');
+            realLayer.classList.remove('active'); // 先隱藏真實層
+
+            // 0.4秒後 (Glitch 結束) 切換內容
+            setTimeout(() => {
+                loadProfile(index, true);
+                glitch.classList.remove('glitch-active');
+            }, 400);
+        }
+
+        function loadProfile(index, animate) {
             document.querySelectorAll('.nav button').forEach((btn, i) => {
                 btn.className = i === index ? 'active' : '';
             });
 
-            const realLayer = document.getElementById('real');
-            realLayer.style.opacity = 0;
+            const p = profiles[index];
+            document.getElementById('icon').innerText = p.icon;
+            document.getElementById('quote').innerHTML = p.quote;
+            document.getElementById('name').innerText = p.name;
             
-            setTimeout(() => {
-                const p = profiles[index];
-                document.getElementById('icon').innerText = p.icon;
-                document.getElementById('quote').innerHTML = p.quote;
-                document.getElementById('name').innerText = p.name;
-                
-                generateTags(p.tags);
-                
-                realLayer.style.opacity = 1;
-            }, 200);
+            generateTags(p.tags);
+            
+            // 顯示真實層 (如果是初始載入直接顯示，否則淡入)
+            const realLayer = document.getElementById('real');
+            if (animate) {
+                setTimeout(() => realLayer.classList.add('active'), 100);
+            } else {
+                realLayer.classList.add('active');
+            }
 
             // 重置滑桿
             updateSlider(90);
             
-            // 隱藏留言區並清空輸入框
+            // 隱藏留言區並清空
             document.getElementById('input-sec').className = 'input-section';
             document.getElementById('msg').value = ''; 
             isInputShown = false;
 
-            // 重要修改：切換角色時清空背景的星星
+            // 清空背景星星
             document.getElementById('stars-bg').innerHTML = '';
         }
 
@@ -156,19 +454,29 @@
             container.innerHTML = "";
             
             let shuffledTags = [...tags].sort(() => 0.5 - Math.random());
-            while (shuffledTags.length < 40) {
+            while (shuffledTags.length < 35) {
                 shuffledTags = shuffledTags.concat([...tags].sort(() => 0.5 - Math.random()));
             }
 
-            for(let i=0; i<40; i++) {
+            for(let i=0; i<35; i++) {
                 let span = document.createElement('span');
                 span.className = 'tag';
-                if(Math.random() > 0.75) span.classList.add('highlight');
+                if(Math.random() > 0.8) span.classList.add('highlight');
                 span.innerText = shuffledTags[i];
+                
+                // 更自然的隨機分佈
                 span.style.left = Math.random() * 90 + '%';
                 span.style.top = Math.random() * 90 + '%';
-                span.style.fontSize = (Math.random() * 1.2 + 0.8) + 'rem';
+                
+                // 大小與旋轉
+                let size = Math.random() * 1.5 + 0.8;
+                span.style.fontSize = size + 'rem';
+                span.style.opacity = Math.random() * 0.5 + 0.2; // 隨機透明度
                 span.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
+                
+                // 為每個標籤設置不同的動畫延遲，讓飄動看起來更自然
+                span.style.animationDelay = (Math.random() * 5) + 's';
+                
                 container.appendChild(span);
             }
         }
@@ -198,6 +506,8 @@
         function updateSlider(p) {
             document.getElementById('mask').style.width = p + '%';
             document.getElementById('handle').style.left = p + '%';
+            
+            // 當滑開顯示超過 85% (即 mask < 15%)
             if(p < 15 && !isInputShown) {
                 isInputShown = true;
                 document.getElementById('input-sec').className = 'input-section show';
@@ -208,11 +518,8 @@
             let val = document.getElementById('msg').value.trim();
             if(!val) return;
             
-            // 關鍵修改：確保星星產生在畫面底部並往上飄
             createStar(val, true);
-            
             document.getElementById('msg').value = "";
-            // alert("✨ 您的祝福已送出，感謝您撕下標籤。"); // 如果覺得彈窗會打斷體驗，可以拿掉這行
         }
 
         function startFloatingStars() {
@@ -220,25 +527,25 @@
             setInterval(() => {
                 let text = presets[Math.floor(Math.random() * presets.length)];
                 createStar(text, false);
-            }, 2000);
+            }, 2500);
         }
 
         function createStar(text, isUser) {
             let div = document.createElement('div');
             div.innerText = text;
             
-            // 設定位置：確保隨機 X 軸
-            div.style.left = Math.random() * 80 + 10 + '%'; // 10%~90% 範圍，避免太靠邊
+            // 隨機位置，避免太靠邊緣
+            div.style.left = Math.random() * 80 + 10 + '%';
             
             if(isUser) {
-                div.className = 'star user-sent'; // 使用新的 user-sent 類別
+                div.className = 'star user-sent'; 
             } else {
                 div.className = 'star';
+                div.style.animationDuration = (Math.random() * 5 + 10) + 's'; // 隨機速度
             }
             
             document.getElementById('stars-bg').appendChild(div);
             
-            // 動畫結束後移除
             setTimeout(() => div.remove(), 15000);
         }
     </script>
