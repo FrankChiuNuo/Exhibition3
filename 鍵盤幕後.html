@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>第三展區：雙面鏡</title>
+    <style>
+        :root { 
+            --bg: #050505; 
+            --green: #00ff41; 
+            --red: #ff3333;
+            --warm: #fffcf5; 
+        }
+        body { background: var(--bg); color: #ddd; font-family: 'Microsoft JhengHei', monospace; height: 100vh; display: flex; flex-direction: column; align-items: center; margin: 0; user-select: none; overflow: hidden; }
+        
+        /* 移除原本的 .home-btn 樣式 */
+
+        .nav { margin-top: 60px; display: flex; gap: 15px; z-index: 10; }
+        .nav button { background: none; border: 1px solid #444; color: #888; padding: 10px 20px; cursor: pointer; transition: 0.3s; font-size: 1rem; }
+        .nav button:hover, .nav button.active { border-color: var(--green); color: var(--green); box-shadow: 0 0 10px rgba(0, 255, 65, 0.2); }
+
+        .mirror-container { width: 90%; max-width: 800px; height: 450px; border: 2px solid #333; margin-top: 30px; position: relative; background: #000; overflow: hidden; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        
+        /* 真實層 (底層) */
+        .real-layer { position: absolute; width: 100%; height: 100%; background: var(--warm); color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 40px; box-sizing: border-box; transition: opacity 0.5s; }
+        .real-icon { font-size: 4rem; margin-bottom: 20px; }
+        .real-quote { font-size: 1.3rem; line-height: 1.6; font-style: italic; font-weight: bold; max-width: 600px; }
+        .real-name { margin-top: 20px; color: #666; border-top: 1px solid #ccc; padding-top: 10px; }
+
+        /* 雜訊層 (遮罩) */
+        .noise-layer { position: absolute; top: 0; left: 0; width: 90%; height: 100%; background: #111; overflow: hidden; border-right: 4px solid var(--green); }
+        .tag { position: absolute; color: rgba(255,255,255,0.2); white-space: nowrap; font-family: monospace; }
+        .tag.highlight { color: var(--red); font-weight: bold; opacity: 0.8; font-size: 1.5rem; text-shadow: 2px 2px 0 #000; z-index: 2; }
+
+        /* 拖曳手把 */
+        .handle { position: absolute; left: 90%; top: 50%; transform: translate(-50%, -50%); background: #000; color: var(--green); border: 1px solid var(--green); padding: 10px 15px; border-radius: 30px; cursor: ew-resize; z-index: 20; font-weight: bold; box-shadow: 0 0 15px var(--green); }
+
+        /* 留言區 */
+        .input-section { margin-top: 30px; opacity: 0; transition: 1s; text-align: center; transform: translateY(20px); pointer-events: none; z-index: 20; position: relative;}
+        .input-section.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
+        
+        input { padding: 12px; width: 250px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; outline: none; }
+        button.send { padding: 12px 25px; background: var(--green); color: #000; border: none; cursor: pointer; border-radius: 4px; font-weight: bold; margin-left: 10px; }
+        button.send:hover { box-shadow: 0 0 15px var(--green); }
+
+        /* 星空特效 */
+        #stars-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+        .star { position: absolute; color: rgba(255,255,255,0.4); animation: float 15s linear forwards; pointer-events: none; font-size: 0.9rem; white-space: nowrap;}
+        
+        /* 使用者發送的星星樣式 */
+        .star.user-sent {
+            color: #00ff41;
+            font-size: 1.8rem;
+            font-weight: bold;
+            text-shadow: 0 0 15px #00ff41;
+            z-index: 100;
+            animation: floatUser 8s linear forwards; /* 速度稍快一點 */
+        }
+
+        @keyframes float { from { transform: translateY(110vh); opacity: 0; } 10% { opacity: 1; } to { transform: translateY(-10vh); opacity: 0; } }
+        @keyframes floatUser { from { transform: translateY(100vh); opacity: 0; } 5% { opacity: 1; } to { transform: translateY(-20vh); opacity: 0; } }
+    </style>
+</head>
+<body>
+    <!-- 移除了 <a href="index.html" class="home-btn">← 回大廳</a> -->
+
+    <div class="nav">
+        <button onclick="loadProfile(0)" class="active">刺青壯漢</button>
+        <button onclick="loadProfile(1)">獨居長輩</button>
+        <button onclick="loadProfile(2)">跨性別者</button>
+    </div>
+
+    <div class="mirror-container" id="stage">
+        <div class="real-layer" id="real">
+            <div class="real-icon" id="icon"></div>
+            <div class="real-quote" id="quote"></div>
+            <div class="real-name" id="name"></div>
+        </div>
+        <div class="noise-layer" id="mask">
+            <div id="tags-container"></div>
+        </div>
+        <div class="handle" id="handle">↔</div>
+    </div>
+
+    <div class="input-section" id="input-sec">
+        <p style="color: #aaa; margin-bottom: 15px;">看見真實後，你想用什麼詞重新定義他/她？</p>
+        <input type="text" id="msg" placeholder="例如：勇敢、做自己..." autocomplete="off">
+        <button class="send" onclick="send()">送出祝福</button>
+    </div>
+
+    <div id="stars-bg"></div>
+
+    <script>
+        const profiles = [
+            {
+                icon: "💪", 
+                name: "- 阿虎 (32歲), 幼兒園志工", 
+                quote: "「夏天我也堅持穿長袖，因為怕嚇到班上的小朋友。<br>我手臂上的刺青，是為了紀念車禍過世的弟弟。」", 
+                tags: ["流氓", "8+9", "黑道", "吸毒", "社會亂源", "前科犯", "兇神惡煞", "撿角", "暴力", "沒救了", "不學好", "混幫派", "危險份子", "低端人口", "沒家教", "不務正業", "看起來很派", "可怕", "刺龍刺鳳"]
+            },
+            {
+                icon: "👓", 
+                name: "- 陳爺爺 (76歲), 退休司機", 
+                quote: "「我其實很想學怎麼用手機轉帳給孫子...<br>但我怕問了又被嫌煩，只能自己去櫃檯慢慢弄。」", 
+                tags: ["老害", "情緒勒索", "跟不上時代", "麻煩", "浪費資源", "固執", "倚老賣老", "三寶", "過時", "不講理", "動作慢", "佔用櫃檯", "老番癲", "聽不懂人話", "阻礙進步", "老古板", "頑固", "只會添亂"]
+            },
+            {
+                icon: "🏳️‍⚧️", 
+                name: "- Alice (26歲), 軟體工程師", 
+                quote: "「我去女廁被趕出來，去男廁被嘲笑。<br>我努力工作、按時繳稅，只是希望能以靈魂真實的樣子生活，為什麼這麼難？」", 
+                tags: ["變態", "人妖", "不男不女", "噁心", "有病要醫", "違反自然", "潛在罪犯", "性別錯亂", "不知羞恥", "心理變態", "男扮女裝", "博眼球", "社會毒瘤", "不敢靠近", "好怪", "精神異常", "變裝癖"]
+            }
+        ];
+
+        let isDragging = false;
+        let isInputShown = false;
+
+        window.onload = () => {
+            loadProfile(0);
+            startFloatingStars();
+        };
+
+        function loadProfile(index) {
+            document.querySelectorAll('.nav button').forEach((btn, i) => {
+                btn.className = i === index ? 'active' : '';
+            });
+
+            const realLayer = document.getElementById('real');
+            realLayer.style.opacity = 0;
+            
+            setTimeout(() => {
+                const p = profiles[index];
+                document.getElementById('icon').innerText = p.icon;
+                document.getElementById('quote').innerHTML = p.quote;
+                document.getElementById('name').innerText = p.name;
+                
+                generateTags(p.tags);
+                
+                realLayer.style.opacity = 1;
+            }, 200);
+
+            // 重置滑桿
+            updateSlider(90);
+            
+            // 隱藏留言區並清空輸入框
+            document.getElementById('input-sec').className = 'input-section';
+            document.getElementById('msg').value = ''; 
+            isInputShown = false;
+
+            // 重要修改：切換角色時清空背景的星星
+            document.getElementById('stars-bg').innerHTML = '';
+        }
+
+        function generateTags(tags) {
+            const container = document.getElementById('tags-container');
+            container.innerHTML = "";
+            
+            let shuffledTags = [...tags].sort(() => 0.5 - Math.random());
+            while (shuffledTags.length < 40) {
+                shuffledTags = shuffledTags.concat([...tags].sort(() => 0.5 - Math.random()));
+            }
+
+            for(let i=0; i<40; i++) {
+                let span = document.createElement('span');
+                span.className = 'tag';
+                if(Math.random() > 0.75) span.classList.add('highlight');
+                span.innerText = shuffledTags[i];
+                span.style.left = Math.random() * 90 + '%';
+                span.style.top = Math.random() * 90 + '%';
+                span.style.fontSize = (Math.random() * 1.2 + 0.8) + 'rem';
+                span.style.transform = `rotate(${Math.random() * 40 - 20}deg)`;
+                container.appendChild(span);
+            }
+        }
+
+        const stage = document.getElementById('stage');
+        const handle = document.getElementById('handle');
+
+        handle.addEventListener('mousedown', (e) => { isDragging = true; e.preventDefault(); });
+        window.addEventListener('mouseup', () => isDragging = false);
+        window.addEventListener('mousemove', onMove);
+
+        handle.addEventListener('touchstart', (e) => { isDragging = true; e.preventDefault(); });
+        window.addEventListener('touchend', () => isDragging = false);
+        window.addEventListener('touchmove', onMove);
+
+        function onMove(e) {
+            if(!isDragging) return;
+            let clientX = e.clientX || e.touches[0].clientX;
+            let rect = stage.getBoundingClientRect();
+            let x = clientX - rect.left;
+            let p = (x / rect.width) * 100;
+            if(p < 0) p = 0;
+            if(p > 100) p = 100;
+            updateSlider(p);
+        }
+
+        function updateSlider(p) {
+            document.getElementById('mask').style.width = p + '%';
+            document.getElementById('handle').style.left = p + '%';
+            if(p < 15 && !isInputShown) {
+                isInputShown = true;
+                document.getElementById('input-sec').className = 'input-section show';
+            }
+        }
+
+        function send() {
+            let val = document.getElementById('msg').value.trim();
+            if(!val) return;
+            
+            // 關鍵修改：確保星星產生在畫面底部並往上飄
+            createStar(val, true);
+            
+            document.getElementById('msg').value = "";
+            // alert("✨ 您的祝福已送出，感謝您撕下標籤。"); // 如果覺得彈窗會打斷體驗，可以拿掉這行
+        }
+
+        function startFloatingStars() {
+            const presets = ["辛苦了", "勇敢", "溫柔", "不孤單", "加油", "值得被愛", "慢慢來", "很棒", "做自己", "堅強"];
+            setInterval(() => {
+                let text = presets[Math.floor(Math.random() * presets.length)];
+                createStar(text, false);
+            }, 2000);
+        }
+
+        function createStar(text, isUser) {
+            let div = document.createElement('div');
+            div.innerText = text;
+            
+            // 設定位置：確保隨機 X 軸
+            div.style.left = Math.random() * 80 + 10 + '%'; // 10%~90% 範圍，避免太靠邊
+            
+            if(isUser) {
+                div.className = 'star user-sent'; // 使用新的 user-sent 類別
+            } else {
+                div.className = 'star';
+            }
+            
+            document.getElementById('stars-bg').appendChild(div);
+            
+            // 動畫結束後移除
+            setTimeout(() => div.remove(), 15000);
+        }
+    </script>
+</body>
+</html>
